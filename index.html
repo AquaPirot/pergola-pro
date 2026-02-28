@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>PERGOLA CORE v3.3</title>
+    <title>PERGOLA CORE v3.4</title>
     <link rel="manifest" href="manifest.json">
     <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Sans:wght@300;400;600&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
@@ -61,6 +61,7 @@
             align-items: center;
             justify-content: center;
             font-weight: bold;
+            font-size: 1.2rem;
         }
         .capacity-bar {
             height: 10px;
@@ -74,7 +75,7 @@
             height: 100%;
             background: linear-gradient(90deg, var(--neon-cyan), #0066ff);
             box-shadow: 0 0 15px var(--neon-cyan);
-            transition: width 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            transition: width 0.6s ease;
         }
 
         .top-actions {
@@ -196,7 +197,7 @@
 
     <header style="margin-bottom: 20px;">
         <h1 style="font-size: 2.2rem;">PERGOLA <span style="color: var(--neon-cyan);">CORE</span></h1>
-        <div style="font-size: 0.8rem; opacity: 0.5; letter-spacing: 2px;">PLANIRANJE KAPACITETA v3.3</div>
+        <div style="font-size: 0.8rem; opacity: 0.5; letter-spacing: 2px;">PLANIRANJE KAPACITETA v3.4</div>
     </header>
 
     <div class="dashboard" id="dash">
@@ -221,7 +222,6 @@
 
     <button class="fab" onclick="openModal()">+</button>
 
-    <!-- MODAL -->
     <div id="projectModal" class="modal">
         <h2 id="modalTitle" style="font-size: 2rem; color: var(--neon-cyan); margin-bottom: 20px;">NOVI UGOVOR</h2>
         <input type="hidden" id="editId">
@@ -236,7 +236,6 @@
 
     <div id="report-area">
         <h1 style="color: var(--neon-cyan); font-size: 3.5rem; margin-bottom: 5px;">LISTA MONTAŽA</h1>
-        <p id="reportDate" style="color: #fff; opacity: 0.8; font-size: 1.2rem; margin-bottom: 20px;"></p>
         <table class="report-table">
             <thead>
                 <tr><th>KLIJENT</th><th>LOKACIJA</th><th>ROK</th><th>DANA</th><th>STATUS</th></tr>
@@ -249,34 +248,35 @@
     </div>
 
     <script>
-        // MIGRACIONA LOGIKA: Proveravamo sve stare nazive baza podataka
-        const OLD_DATA_V32 = localStorage.getItem('pergola_v3_2_data');
-        const OLD_DATA_V31 = localStorage.getItem('pergola_v3_1_data');
-        const OLD_DATA_V2 = localStorage.getItem('pergola_v2_data');
-        const OLD_DATA_INITIAL = localStorage.getItem('pergolaProjects');
-
-        // Učitavamo bilo šta što nađemo, redom od najnovijeg ka najstarijem
-        let rawData = localStorage.getItem('pergola_master_data') || OLD_DATA_V32 || OLD_DATA_V31 || OLD_DATA_V2 || OLD_DATA_INITIAL;
-        let projects = JSON.parse(rawData) || [];
+        const STORAGE_KEY = 'pergola_master_data';
+        const oldKeys = ['pergola_v3_2_data', 'pergola_v3_1_data', 'pergola_v2_data', 'pergolaProjects'];
+        
+        let raw = localStorage.getItem(STORAGE_KEY);
+        if(!raw) {
+            for(let k of oldKeys) {
+                let found = localStorage.getItem(k);
+                if(found) { raw = found; break; }
+            }
+        }
+        let projects = JSON.parse(raw || "[]");
 
         const PHASES = ['Merenje', 'Proizvodnja', 'Spreman', 'Montaža'];
         let displayDate = new Date();
 
         function srbDate(iso) {
             if(!iso) return "-";
-            return new Date(iso).toLocaleDateString('sr-RS') + (new Date(iso).toLocaleDateString('sr-RS').endsWith('.') ? '' : '.');
+            const d = new Date(iso);
+            return d.toLocaleDateString('sr-RS') + (d.toLocaleDateString('sr-RS').endsWith('.') ? '' : '.');
         }
 
-        function formatDan(n) {
-            return n === 1 ? "1 dan" : `${n} dana`;
-        }
+        function formatDan(n) { return n === 1 ? "1 dan" : `${n} dana`; }
 
         function changeMonth(dir) {
-            displayDate.setMonth(displayDate.setMonth(displayDate.getMonth() + dir));
+            displayDate.setDate(1); 
+            displayDate.setMonth(displayDate.getMonth() + dir);
             render();
         }
 
-        // Swipe za Dashboard
         let dashX = 0;
         document.getElementById('dash').ontouchstart = e => dashX = e.touches[0].clientX;
         document.getElementById('dash').ontouchend = e => {
@@ -323,8 +323,7 @@
         }
 
         function saveAndRefresh() {
-            // OD SADA UVEK SNIMAMO U ISTI KLJUČ DA SE OVO NE PONOVI
-            localStorage.setItem('pergola_master_data', JSON.stringify(projects));
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(projects));
             render();
         }
 
@@ -372,18 +371,21 @@
             const m = displayDate.getMonth();
             const y = displayDate.getFullYear();
             const months = ["JANUAR", "FEBRUAR", "MART", "APRIL", "MAJ", "JUN", "JUL", "AVGUST", "SEPTEMBAR", "OKTOBAR", "NOVEMBAR", "DECEMBAR"];
+            
             document.getElementById('currentMonthLabel').innerText = `${months[m]} ${y}.`;
+            
             const used = projects.reduce((acc, p) => {
                 const d = new Date(p.deadline);
                 return (d.getMonth() === m && d.getFullYear() === y) ? acc + p.estDays : acc;
             }, 0);
-            document.getElementById('capacityFill').style.width = Math.min((used / 24) * 100, 100) + '%';
+            
+            const pct = Math.min((used / 24) * 100, 100);
+            document.getElementById('capacityFill').style.width = pct + '%';
             document.getElementById('capacityStatus').innerText = `${used}/24 DANA`;
         }
 
         async function generateReport() {
             const content = document.getElementById('reportContent');
-            document.getElementById('reportDate').innerText = "KREIRANO: " + new Date().toLocaleString('sr-RS');
             content.innerHTML = '';
             projects.filter(p => p.phase < 4).forEach(p => {
                 content.innerHTML += `<tr>
@@ -394,6 +396,7 @@
                     <td style="color:var(--neon-cyan)">${PHASES[p.phase].toUpperCase()}</td>
                 </tr>`;
             });
+
             const canvas = await html2canvas(document.getElementById('report-area'));
             const link = document.createElement('a');
             link.download = `Plan_Pergole_${new Date().toLocaleDateString('sr-RS')}.png`;
