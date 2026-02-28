@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pergola-v3';
+const CACHE_NAME = 'pergola-v2';
 const ASSETS = [
   'index.html',
   'manifest.json'
