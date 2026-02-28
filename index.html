@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>PERGOLA CORE v3.2</title>
+    <title>PERGOLA CORE v3.3</title>
     <link rel="manifest" href="manifest.json">
     <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Sans:wght@300;400;600&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
@@ -34,7 +34,6 @@
 
         h1, h2, h3 { font-family: var(--font-header); letter-spacing: 1px; margin: 0; }
 
-        /* DASHBOARD & NAVIGATION */
         .dashboard {
             background: var(--card-bg);
             backdrop-filter: blur(15px);
@@ -56,13 +55,12 @@
             border: 1px solid var(--neon-cyan);
             color: var(--neon-cyan);
             border-radius: 50%;
-            width: 32px;
-            height: 32px;
+            width: 35px;
+            height: 35px;
             display: flex;
             align-items: center;
             justify-content: center;
             font-weight: bold;
-            cursor: pointer;
         }
         .capacity-bar {
             height: 10px;
@@ -79,7 +77,6 @@
             transition: width 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
 
-        /* ACTIONS */
         .top-actions {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -101,7 +98,6 @@
             gap: 8px;
         }
 
-        /* PROJECT LIST */
         .project-list {
             display: flex;
             flex-direction: column;
@@ -120,7 +116,6 @@
             box-shadow: 0 0 15px rgba(255, 0, 60, 0.15);
         }
 
-        /* PHASE TRACKER */
         .phase-container {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
@@ -132,7 +127,6 @@
         .phase-label { font-size: 0.6rem; text-align: center; margin-top: 4px; opacity: 0.4; text-transform: uppercase; }
         .phase-label.active { opacity: 1; color: var(--neon-cyan); font-weight: 600; }
 
-        /* MODAL */
         .modal {
             display: none;
             position: fixed;
@@ -169,7 +163,6 @@
             color: #000;
         }
 
-        /* REPORT STYLING */
         #report-area {
             position: fixed;
             left: -9999px;
@@ -203,10 +196,9 @@
 
     <header style="margin-bottom: 20px;">
         <h1 style="font-size: 2.2rem;">PERGOLA <span style="color: var(--neon-cyan);">CORE</span></h1>
-        <div style="font-size: 0.8rem; opacity: 0.5; letter-spacing: 2px;">PLANIRANJE KAPACITETA v3.2</div>
+        <div style="font-size: 0.8rem; opacity: 0.5; letter-spacing: 2px;">PLANIRANJE KAPACITETA v3.3</div>
     </header>
 
-    <!-- DASHBOARD SA NAVIGACIJOM KROZ MESECE -->
     <div class="dashboard" id="dash">
         <div class="month-nav">
             <button class="nav-btn" onclick="changeMonth(-1)">&#10094;</button>
@@ -218,7 +210,6 @@
             <span id="capacityStatus" style="color: var(--neon-cyan); font-weight: bold;">0/24 DANA</span>
         </div>
         <div class="capacity-bar"><div id="capacityFill"></div></div>
-        <div style="font-size: 0.65rem; opacity: 0.3; text-align: center; margin-top: 5px;">SWIPE ZA PROMENU MESECA</div>
     </div>
 
     <div class="top-actions">
@@ -243,7 +234,6 @@
         <button class="btn-small" style="width:100%; padding:15px; margin-top:10px; border-color:grey; color:grey;" onclick="closeModal()">ODUSTANI</button>
     </div>
 
-    <!-- REPORT AREA -->
     <div id="report-area">
         <h1 style="color: var(--neon-cyan); font-size: 3.5rem; margin-bottom: 5px;">LISTA MONTAŽA</h1>
         <p id="reportDate" style="color: #fff; opacity: 0.8; font-size: 1.2rem; margin-bottom: 20px;"></p>
@@ -259,33 +249,37 @@
     </div>
 
     <script>
-        let projects = JSON.parse(localStorage.getItem('pergola_v3_2_data')) || [];
+        // MIGRACIONA LOGIKA: Proveravamo sve stare nazive baza podataka
+        const OLD_DATA_V32 = localStorage.getItem('pergola_v3_2_data');
+        const OLD_DATA_V31 = localStorage.getItem('pergola_v3_1_data');
+        const OLD_DATA_V2 = localStorage.getItem('pergola_v2_data');
+        const OLD_DATA_INITIAL = localStorage.getItem('pergolaProjects');
+
+        // Učitavamo bilo šta što nađemo, redom od najnovijeg ka najstarijem
+        let rawData = localStorage.getItem('pergola_master_data') || OLD_DATA_V32 || OLD_DATA_V31 || OLD_DATA_V2 || OLD_DATA_INITIAL;
+        let projects = JSON.parse(rawData) || [];
+
         const PHASES = ['Merenje', 'Proizvodnja', 'Spreman', 'Montaža'];
-        
-        // GLOBALNO STANJE ZA PRIKAZ MESECA
-        let displayDate = new Date(); // Trenutni mesec
+        let displayDate = new Date();
 
         function srbDate(iso) {
             if(!iso) return "-";
             return new Date(iso).toLocaleDateString('sr-RS') + (new Date(iso).toLocaleDateString('sr-RS').endsWith('.') ? '' : '.');
         }
 
-        // Gramatička ispravka za dane
         function formatDan(n) {
-            if (n === 1) return "1 dan";
-            return `${n} dana`;
+            return n === 1 ? "1 dan" : `${n} dana`;
         }
 
         function changeMonth(dir) {
-            displayDate.setMonth(displayDate.getMonth() + dir);
+            displayDate.setMonth(displayDate.setMonth(displayDate.getMonth() + dir));
             render();
         }
 
         // Swipe za Dashboard
         let dashX = 0;
-        const dash = document.getElementById('dash');
-        dash.ontouchstart = e => dashX = e.touches[0].clientX;
-        dash.ontouchend = e => {
+        document.getElementById('dash').ontouchstart = e => dashX = e.touches[0].clientX;
+        document.getElementById('dash').ontouchend = e => {
             let diff = e.changedTouches[0].clientX - dashX;
             if(Math.abs(diff) > 80) changeMonth(diff > 0 ? -1 : 1);
         }
@@ -329,7 +323,8 @@
         }
 
         function saveAndRefresh() {
-            localStorage.setItem('pergola_v3_2_data', JSON.stringify(projects));
+            // OD SADA UVEK SNIMAMO U ISTI KLJUČ DA SE OVO NE PONOVI
+            localStorage.setItem('pergola_master_data', JSON.stringify(projects));
             render();
         }
 
@@ -346,7 +341,6 @@
                 const card = document.createElement('div');
                 card.className = `project-card ${isRisky ? 'risky' : ''}`;
                 
-                // Swipe faze
                 let startX = 0;
                 card.ontouchstart = e => startX = e.touches[0].clientX;
                 card.ontouchend = e => {
@@ -378,16 +372,12 @@
             const m = displayDate.getMonth();
             const y = displayDate.getFullYear();
             const months = ["JANUAR", "FEBRUAR", "MART", "APRIL", "MAJ", "JUN", "JUL", "AVGUST", "SEPTEMBAR", "OKTOBAR", "NOVEMBAR", "DECEMBAR"];
-            
             document.getElementById('currentMonthLabel').innerText = `${months[m]} ${y}.`;
-            
             const used = projects.reduce((acc, p) => {
                 const d = new Date(p.deadline);
                 return (d.getMonth() === m && d.getFullYear() === y) ? acc + p.estDays : acc;
             }, 0);
-            
-            const pct = Math.min((used / 24) * 100, 100);
-            document.getElementById('capacityFill').style.width = pct + '%';
+            document.getElementById('capacityFill').style.width = Math.min((used / 24) * 100, 100) + '%';
             document.getElementById('capacityStatus').innerText = `${used}/24 DANA`;
         }
 
@@ -395,7 +385,6 @@
             const content = document.getElementById('reportContent');
             document.getElementById('reportDate').innerText = "KREIRANO: " + new Date().toLocaleString('sr-RS');
             content.innerHTML = '';
-            
             projects.filter(p => p.phase < 4).forEach(p => {
                 content.innerHTML += `<tr>
                     <td><b>${p.client}</b></td>
@@ -405,7 +394,6 @@
                     <td style="color:var(--neon-cyan)">${PHASES[p.phase].toUpperCase()}</td>
                 </tr>`;
             });
-
             const canvas = await html2canvas(document.getElementById('report-area'));
             const link = document.createElement('a');
             link.download = `Plan_Pergole_${new Date().toLocaleDateString('sr-RS')}.png`;
