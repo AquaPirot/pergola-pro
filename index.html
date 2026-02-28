@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>PERGOLA CORE v3.1</title>
+    <title>PERGOLA CORE v3.2</title>
     <link rel="manifest" href="manifest.json">
     <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Sans:wght@300;400;600&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
@@ -34,27 +34,49 @@
 
         h1, h2, h3 { font-family: var(--font-header); letter-spacing: 1px; margin: 0; }
 
-        /* DASHBOARD */
+        /* DASHBOARD & NAVIGATION */
         .dashboard {
             background: var(--card-bg);
             backdrop-filter: blur(15px);
             border: 1px solid var(--glass-border);
             border-radius: 15px;
-            padding: 15px;
+            padding: 18px;
             margin-bottom: 20px;
+            position: relative;
+            touch-action: pan-y;
+        }
+        .month-nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+        .nav-btn {
+            background: none;
+            border: 1px solid var(--neon-cyan);
+            color: var(--neon-cyan);
+            border-radius: 50%;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            cursor: pointer;
         }
         .capacity-bar {
-            height: 8px;
+            height: 10px;
             background: rgba(255,255,255,0.05);
-            border-radius: 4px;
+            border-radius: 5px;
             margin: 10px 0;
             overflow: hidden;
+            border: 1px solid rgba(255,255,255,0.1);
         }
         #capacityFill {
             height: 100%;
             background: linear-gradient(90deg, var(--neon-cyan), #0066ff);
-            box-shadow: 0 0 10px var(--neon-cyan);
-            transition: width 0.5s;
+            box-shadow: 0 0 15px var(--neon-cyan);
+            transition: width 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
 
         /* ACTIONS */
@@ -64,7 +86,6 @@
             gap: 10px;
             margin-bottom: 20px;
         }
-
         .btn-small {
             padding: 12px;
             font-family: var(--font-header);
@@ -87,7 +108,6 @@
             gap: 15px;
             padding-bottom: 100px;
         }
-
         .project-card {
             background: var(--card-bg);
             border: 1px solid var(--glass-border);
@@ -95,20 +115,9 @@
             padding: 15px;
             position: relative;
         }
-
         .project-card.risky {
             border-left: 4px solid var(--neon-red);
             box-shadow: 0 0 15px rgba(255, 0, 60, 0.15);
-        }
-
-        .risk-badge {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            color: var(--neon-red);
-            font-family: var(--font-header);
-            font-size: 0.9rem;
-            letter-spacing: 1px;
         }
 
         /* PHASE TRACKER */
@@ -160,11 +169,11 @@
             color: #000;
         }
 
-        /* REPORT STYLING (Hidden) */
+        /* REPORT STYLING */
         #report-area {
             position: fixed;
             left: -9999px;
-            width: 800px;
+            width: 900px;
             background: #000;
             padding: 40px;
             border: 3px solid var(--neon-cyan);
@@ -178,7 +187,7 @@
             text-align: left;
             color: var(--neon-cyan);
             font-family: var(--font-header);
-            font-size: 1.2rem;
+            font-size: 1.3rem;
             border-bottom: 2px solid var(--neon-cyan);
             padding: 12px;
         }
@@ -194,96 +203,97 @@
 
     <header style="margin-bottom: 20px;">
         <h1 style="font-size: 2.2rem;">PERGOLA <span style="color: var(--neon-cyan);">CORE</span></h1>
-        <div style="font-size: 0.8rem; opacity: 0.5; letter-spacing: 2px;">MANAGEMENT SYSTEM v3.1</div>
+        <div style="font-size: 0.8rem; opacity: 0.5; letter-spacing: 2px;">PLANIRANJE KAPACITETA v3.2</div>
     </header>
 
-    <div class="dashboard">
-        <div style="display: flex; justify-content: space-between; align-items: baseline;">
-            <div id="currentMonth" style="font-family: var(--font-header); font-size: 1.4rem; color: #fff;">-</div>
-            <div id="capacityStatus" style="font-size: 1rem; color: var(--neon-cyan); font-weight: 600;">0/24 DANA</div>
+    <!-- DASHBOARD SA NAVIGACIJOM KROZ MESECE -->
+    <div class="dashboard" id="dash">
+        <div class="month-nav">
+            <button class="nav-btn" onclick="changeMonth(-1)">&#10094;</button>
+            <div id="currentMonthLabel" style="font-family: var(--font-header); font-size: 1.6rem; color: #fff;">-</div>
+            <button class="nav-btn" onclick="changeMonth(1)">&#10095;</button>
+        </div>
+        <div style="display: flex; justify-content: space-between; font-size: 0.9rem; margin-top: 10px;">
+            <span style="opacity: 0.7;">ZAUZEĆE MONTAŽE:</span>
+            <span id="capacityStatus" style="color: var(--neon-cyan); font-weight: bold;">0/24 DANA</span>
         </div>
         <div class="capacity-bar"><div id="capacityFill"></div></div>
+        <div style="font-size: 0.65rem; opacity: 0.3; text-align: center; margin-top: 5px;">SWIPE ZA PROMENU MESECA</div>
     </div>
 
     <div class="top-actions">
         <div class="btn-small" onclick="generateReport()">📸 IZVEŠTAJ</div>
-        <div class="btn-small" onclick="backupData()">💾 REZERVNA KOPIJA</div>
+        <div class="btn-small" onclick="backupData()">💾 BACKUP</div>
     </div>
 
     <div class="project-list" id="projectList"></div>
 
     <button class="fab" onclick="openModal()">+</button>
 
-    <!-- MODAL ZA UNOS/EDIT -->
+    <!-- MODAL -->
     <div id="projectModal" class="modal">
         <h2 id="modalTitle" style="font-size: 2rem; color: var(--neon-cyan); margin-bottom: 20px;">NOVI UGOVOR</h2>
         <input type="hidden" id="editId">
-        
-        <div class="form-group">
-            <label>IME KLIJENTA</label>
-            <input type="text" id="clientName" placeholder="npr. Marko Marković">
-        </div>
-        <div class="form-group">
-            <label>LOKACIJA MONTAŽE</label>
-            <input type="text" id="clientLoc" placeholder="npr. Novi Sad, Centar">
-        </div>
-        <div class="form-group">
-            <label>DATUM POTPISIVANJA UGOVORA</label>
-            <input type="date" id="contractDate">
-        </div>
-        <div class="form-group">
-            <label>ROK ZA ZAVRŠETAK (MONTAŽA)</label>
-            <input type="date" id="deadline">
-        </div>
-        <div class="form-group">
-            <label>PROCENJEN BROJ DANA MONTAŽE</label>
-            <input type="number" id="estDays" placeholder="npr. 2">
-        </div>
-
-        <button class="btn-small" style="width:100%; padding:18px; margin-top:20px; background: var(--neon-cyan); color:#000; border:none;" onclick="saveProject()">POTVRDI PROMENE</button>
-        <button class="btn-small" style="width:100%; padding:15px; margin-top:10px; border-color:rgba(255,255,255,0.2); color:rgba(255,255,255,0.5);" onclick="closeModal()">ODUSTANI</button>
+        <div class="form-group"><label>IME KLIJENTA</label><input type="text" id="clientName"></div>
+        <div class="form-group"><label>LOKACIJA</label><input type="text" id="clientLoc"></div>
+        <div class="form-group"><label>DATUM UGOVORA</label><input type="date" id="contractDate"></div>
+        <div class="form-group"><label>ROK ZA MONTAŽU</label><input type="date" id="deadline"></div>
+        <div class="form-group"><label>DANA MONTAŽE</label><input type="number" id="estDays"></div>
+        <button class="btn-small" style="width:100%; padding:18px; margin-top:20px; background: var(--neon-cyan); color:#000; border:none;" onclick="saveProject()">SAČUVAJ</button>
+        <button class="btn-small" style="width:100%; padding:15px; margin-top:10px; border-color:grey; color:grey;" onclick="closeModal()">ODUSTANI</button>
     </div>
 
-    <!-- SKRIVENI TEMPLATE ZA IZVEŠTAJ -->
+    <!-- REPORT AREA -->
     <div id="report-area">
-        <h1 style="color: var(--neon-cyan); font-size: 3.5rem; margin-bottom: 5px;">PLAN I KAPACITET MONTAŽE</h1>
+        <h1 style="color: var(--neon-cyan); font-size: 3.5rem; margin-bottom: 5px;">LISTA MONTAŽA</h1>
         <p id="reportDate" style="color: #fff; opacity: 0.8; font-size: 1.2rem; margin-bottom: 20px;"></p>
         <table class="report-table">
             <thead>
-                <tr>
-                    <th>KLIJENT</th>
-                    <th>LOKACIJA</th>
-                    <th>ROK ZAVRŠETKA</th>
-                    <th>DANA</th>
-                    <th>STATUS FAZE</th>
-                </tr>
+                <tr><th>KLIJENT</th><th>LOKACIJA</th><th>ROK</th><th>DANA</th><th>STATUS</th></tr>
             </thead>
             <tbody id="reportContent"></tbody>
         </table>
-        <div style="margin-top:40px; border-top: 1px solid var(--neon-cyan); padding-top: 20px; display: flex; justify-content: space-between;">
-            <span style="color:var(--neon-cyan); font-family: var(--font-header); font-size: 1.2rem;">PERGOLA CORE // IZVEŠTAJ ZA EKIPU</span>
-            <span id="reportCapacity" style="color:#fff; font-weight: bold;"></span>
+        <div style="margin-top:40px; border-top: 1px solid var(--neon-cyan); padding-top: 20px;">
+            <span style="color:var(--neon-cyan); font-family: var(--font-header); font-size: 1.5rem;">SPISAK UGOVORENIH PROJEKATA</span>
         </div>
     </div>
 
     <script>
-        let projects = JSON.parse(localStorage.getItem('pergola_v3_1_data')) || [];
+        let projects = JSON.parse(localStorage.getItem('pergola_v3_2_data')) || [];
         const PHASES = ['Merenje', 'Proizvodnja', 'Spreman', 'Montaža'];
+        
+        // GLOBALNO STANJE ZA PRIKAZ MESECA
+        let displayDate = new Date(); // Trenutni mesec
 
-        // Pomoćna funkcija za formatiranje datuma u SRB format (DD.MM.YYYY.)
-        function srbDate(isoString) {
-            if(!isoString) return "-";
-            const date = new Date(isoString);
-            return date.toLocaleDateString('sr-RS') + (date.toLocaleDateString('sr-RS').endsWith('.') ? '' : '.');
+        function srbDate(iso) {
+            if(!iso) return "-";
+            return new Date(iso).toLocaleDateString('sr-RS') + (new Date(iso).toLocaleDateString('sr-RS').endsWith('.') ? '' : '.');
+        }
+
+        // Gramatička ispravka za dane
+        function formatDan(n) {
+            if (n === 1) return "1 dan";
+            return `${n} dana`;
+        }
+
+        function changeMonth(dir) {
+            displayDate.setMonth(displayDate.getMonth() + dir);
+            render();
+        }
+
+        // Swipe za Dashboard
+        let dashX = 0;
+        const dash = document.getElementById('dash');
+        dash.ontouchstart = e => dashX = e.touches[0].clientX;
+        dash.ontouchend = e => {
+            let diff = e.changedTouches[0].clientX - dashX;
+            if(Math.abs(diff) > 80) changeMonth(diff > 0 ? -1 : 1);
         }
 
         function openModal(id = null) {
             const modal = document.getElementById('projectModal');
-            const title = document.getElementById('modalTitle');
-            
             if(id) {
                 const p = projects.find(x => x.id === id);
-                title.innerText = "IZMENA PROJEKTA";
                 document.getElementById('editId').value = p.id;
                 document.getElementById('clientName').value = p.client;
                 document.getElementById('clientLoc').value = p.location;
@@ -291,7 +301,6 @@
                 document.getElementById('deadline').value = p.deadline;
                 document.getElementById('estDays').value = p.estDays;
             } else {
-                title.innerText = "NOVI UGOVOR";
                 document.getElementById('editId').value = "";
                 document.querySelectorAll('.modal input').forEach(i => i.value = "");
             }
@@ -309,150 +318,106 @@
                 deadline: document.getElementById('deadline').value,
                 estDays: parseInt(document.getElementById('estDays').value) || 1
             };
-
-            if(!pData.client || !pData.deadline) {
-                alert("Ime klijenta i rok su obavezni!");
-                return;
-            }
-
             if(editId) {
                 const idx = projects.findIndex(x => x.id == editId);
                 projects[idx] = {...projects[idx], ...pData};
             } else {
                 projects.push({...pData, id: Date.now(), phase: 0});
             }
-
             saveAndRefresh();
             closeModal();
         }
 
         function saveAndRefresh() {
-            localStorage.setItem('pergola_v3_1_data', JSON.stringify(projects));
+            localStorage.setItem('pergola_v3_2_data', JSON.stringify(projects));
             render();
-        }
-
-        function getRisk(p) {
-            const daysLeft = Math.ceil((new Date(p.deadline) - new Date()) / (1000*60*60*24));
-            if(p.phase === 0 && daysLeft < 15) return "PROIZVODNJA MORA KRENUTI!";
-            if(p.phase === 1 && daysLeft < 5) return "KRITIČAN ROK!";
-            return null;
         }
 
         function render() {
             const list = document.getElementById('projectList');
             list.innerHTML = '';
             
-            // Sortiranje po datumu ugovora
             projects.sort((a,b) => new Date(a.contractDate) - new Date(b.contractDate));
 
             projects.forEach(p => {
-                const risk = getRisk(p);
-                const card = document.createElement('div');
-                card.className = `project-card ${risk ? 'risky' : ''}`;
+                const daysLeft = Math.ceil((new Date(p.deadline) - new Date()) / (1000*60*60*24));
+                const isRisky = (p.phase === 0 && daysLeft < 15) || (p.phase === 1 && daysLeft < 5);
                 
-                // Swipe za mobilni
+                const card = document.createElement('div');
+                card.className = `project-card ${isRisky ? 'risky' : ''}`;
+                
+                // Swipe faze
                 let startX = 0;
                 card.ontouchstart = e => startX = e.touches[0].clientX;
                 card.ontouchend = e => {
                     let diff = e.changedTouches[0].clientX - startX;
-                    if(Math.abs(diff) > 100) changePhase(p.id, diff > 0 ? -1 : 1);
+                    if(Math.abs(diff) > 100) {
+                        p.phase = Math.max(0, Math.min(3, p.phase + (diff > 0 ? -1 : 1)));
+                        saveAndRefresh();
+                    }
                 };
 
                 card.innerHTML = `
-                    ${risk ? `<div class="risk-badge">⚠️ ${risk}</div>` : ''}
-                    <h3 style="color:#fff; font-size: 1.5rem;">${p.client}</h3>
-                    <div style="font-size:0.85rem; opacity:0.6; margin:4px 0;">📍 ${p.location}</div>
-                    <div style="font-size:0.85rem; color:var(--neon-cyan); margin-bottom: 2px;">📝 Ugovoreno: ${srbDate(p.contractDate)}</div>
-                    <div style="font-size:0.9rem; color:#fff; font-weight: 600;">🏁 ROK: ${srbDate(p.deadline)} (${p.estDays} dana)</div>
-                    
+                    <h3 style="color:#fff; font-size:1.5rem;">${p.client}</h3>
+                    <div style="font-size:0.85rem; opacity:0.6;">📍 ${p.location}</div>
+                    <div style="font-size:0.85rem; color:var(--neon-cyan);">🏁 ROK: ${srbDate(p.deadline)} (${formatDan(p.estDays)})</div>
                     <div class="phase-container">
-                        ${PHASES.map((ph, i) => `
-                            <div>
-                                <div class="phase-box ${i <= p.phase ? 'active' : ''}"></div>
-                                <div class="phase-label ${i <= p.phase ? 'active' : ''}">${ph}</div>
-                            </div>
-                        `).join('')}
+                        ${PHASES.map((ph, i) => `<div class="phase-box ${i <= p.phase ? 'active' : ''}"></div>`).join('')}
                     </div>
-
-                    <div style="margin-top:20px; display:flex; gap:20px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 10px;">
-                        <span onclick="openModal(${p.id})" style="color:var(--neon-cyan); font-size:0.8rem; font-weight: 600;">✏️ IZMENI</span>
-                        <span onclick="deleteProject(${p.id})" style="color:var(--neon-red); font-size:0.8rem; opacity:0.6;">🗑️ OBRIŠI</span>
+                    <div style="margin-top:15px; display:flex; gap:20px;">
+                        <span onclick="openModal(${p.id})" style="color:var(--neon-cyan); font-size:0.8rem;">✏️ IZMENI</span>
+                        <span onclick="deleteProject(${p.id})" style="color:var(--neon-red); font-size:0.8rem; opacity:0.5;">🗑️ OBRIŠI</span>
                     </div>
                 `;
                 list.appendChild(card);
             });
-            updateCapacity();
+            updateDashboard();
         }
 
-        function changePhase(id, dir) {
-            const p = projects.find(x => x.id === id);
-            p.phase = Math.max(0, Math.min(3, p.phase + dir));
-            saveAndRefresh();
-        }
-
-        function deleteProject(id) {
-            if(confirm("Potvrdi brisanje projekta?")) {
-                projects = projects.filter(x => x.id !== id);
-                saveAndRefresh();
-            }
-        }
-
-        function updateCapacity() {
-            const now = new Date();
+        function updateDashboard() {
+            const m = displayDate.getMonth();
+            const y = displayDate.getFullYear();
+            const months = ["JANUAR", "FEBRUAR", "MART", "APRIL", "MAJ", "JUN", "JUL", "AVGUST", "SEPTEMBAR", "OKTOBAR", "NOVEMBAR", "DECEMBAR"];
+            
+            document.getElementById('currentMonthLabel').innerText = `${months[m]} ${y}.`;
+            
             const used = projects.reduce((acc, p) => {
                 const d = new Date(p.deadline);
-                return (d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear()) ? acc + p.estDays : acc;
+                return (d.getMonth() === m && d.getFullYear() === y) ? acc + p.estDays : acc;
             }, 0);
             
             const pct = Math.min((used / 24) * 100, 100);
             document.getElementById('capacityFill').style.width = pct + '%';
             document.getElementById('capacityStatus').innerText = `${used}/24 DANA`;
-            
-            const months = ["JANUAR", "FEBRUAR", "MART", "APRIL", "MAJ", "JUN", "JUL", "AVGUST", "SEPTEMBAR", "OKTOBAR", "NOVEMBAR", "DECEMBAR"];
-            document.getElementById('currentMonth').innerText = `${months[now.getMonth()]} ${now.getFullYear()}.`;
         }
 
         async function generateReport() {
-            const reportContent = document.getElementById('reportContent');
-            const reportDate = document.getElementById('reportDate');
-            const reportCapacity = document.getElementById('reportCapacity');
+            const content = document.getElementById('reportContent');
+            document.getElementById('reportDate').innerText = "KREIRANO: " + new Date().toLocaleString('sr-RS');
+            content.innerHTML = '';
             
-            reportDate.innerText = "IZVEŠTAJ KREIRAN: " + new Date().toLocaleString('sr-RS');
-            reportContent.innerHTML = '';
-
-            // Samo projekti koji još nisu skroz završeni (faza 3 je montaža u toku/kraj)
-            const active = projects.filter(p => p.phase < 4);
-
-            active.forEach(p => {
-                const row = `<tr>
+            projects.filter(p => p.phase < 4).forEach(p => {
+                content.innerHTML += `<tr>
                     <td><b>${p.client}</b></td>
                     <td>${p.location}</td>
                     <td>${srbDate(p.deadline)}</td>
                     <td>${p.estDays}</td>
-                    <td style="color:var(--neon-cyan); font-weight:bold;">${PHASES[p.phase].toUpperCase()}</td>
+                    <td style="color:var(--neon-cyan)">${PHASES[p.phase].toUpperCase()}</td>
                 </tr>`;
-                reportContent.innerHTML += row;
             });
 
-            reportCapacity.innerText = "POPUNJENOST MESECA: " + document.getElementById('capacityStatus').innerText;
-
-            const reportArea = document.getElementById('report-area');
-            const canvas = await html2canvas(reportArea);
-            const image = canvas.toDataURL("image/png");
-            
+            const canvas = await html2canvas(document.getElementById('report-area'));
             const link = document.createElement('a');
-            link.download = `Plan_Montaze_${new Date().toLocaleDateString('sr-RS')}.png`;
-            link.href = image;
+            link.download = `Plan_Pergole_${new Date().toLocaleDateString('sr-RS')}.png`;
+            link.href = canvas.toDataURL();
             link.click();
         }
 
+        function deleteProject(id) { if(confirm("Obriši?")) { projects = projects.filter(x => x.id !== id); saveAndRefresh(); } }
         function backupData() {
-            const data = JSON.stringify(projects);
-            const blob = new Blob([data], {type: 'application/json'});
-            const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
-            a.href = url;
-            a.download = `pergola_backup_${new Date().toLocaleDateString('sr-RS')}.json`;
+            a.href = URL.createObjectURL(new Blob([JSON.stringify(projects)], {type:'application/json'}));
+            a.download = 'pergola_core_backup.json';
             a.click();
         }
 
